@@ -1,4 +1,5 @@
 from app import db
+from sqlalchemy import UniqueConstraint
 
 class BoundingBox(db.Model):
     id = db.Column(db.Integer, primary_key=True,nullable=False)
@@ -68,9 +69,10 @@ class Model(db.Model):
 
 class ImageUserStatus(db.Model):
     id = db.Column(db.Integer,primary_key=True)
-    status = db.Column(db.String(10))
+    status = db.Column(db.String(10),nullable=False)
     imageId=db.Column(db.Integer,db.ForeignKey('image.id'),nullable=False)
     userId = db.Column(db.Integer,nullable=False)
+    UniqueConstraint('imageId', 'userId', 'status', name='user_image_status')
 
     def __init__(self, status,imageId,userId):
         self.status= status

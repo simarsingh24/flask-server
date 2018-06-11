@@ -251,25 +251,26 @@ def get_bbox_filter_image_mode(image_id, mode):
     result = bounding_boxes_schema.dump(all_bbox)
     return jsonify(result.data)
 
-# @app.route('/tag/<image_id>', methods = ['POST'])
-# def tag_image(image_id):
-#     bbox_tlx = request.json["topLeftX"]
-#     bbox_tly = request.json["topLeftY"]
-#     bbox_brx = request.json["bottomRightX"]
-#     bbox_bry = request.json["bottomRightY"]
-#     confidence = request.json["confidence"]
-#     mode = request.json["mode"]
-#     status = request.json["status"]
-#     user_id = request.json["userId"]
-#     label_id = request.json["labelId"]
-#     tag_status = request.json["tagStatus"]
-#     new_bbox = BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,
-#         mode,status,user_id,image_id,label_id)
-#     db.session.add(new_bbox)
-#     new_image_user_status = ImageUserStatus(tag_status, image_id, user_id)
-#     db.session.add(new_image_user_status)
-#     db.session.commit()
-#     return jsonify()
+# Accepts Status as a query par
+@app.route('/tag/<image_id>/<user_id>', methods = ['POST'])
+def tag_image(image_id, user_id):
+    tag_status = request.args.get('status')
+    new_image_user_status = ImageUserStatus(tag_status, image_id, user_id)
+    db.session.add(new_image_user_status)
+    all_bbox = []
+    for bbox_request in request.json:
+        bbox_tlx = bbox_request["topleft"]["x"]
+        bbox_tly = bbox_request["topleft"]["y"]
+        bbox_brx = bbox_request["bottomright"]["x"]
+        bbox_bry = bbox_request["bottomright"]["y"]
+        confidence = bbox_request["confidence"]
+        mode = bbox_request["mode"]
+        status = bbox_request["status"]
+        label_id = bbox_request["labelId"]
+        db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,mode,
+            status,user_id,image_id,label_id))
+    db.session.commit()
+    return image_user_status_schema.jsonify(new_image_user_status)
 
 @app.route('/label/model/<model_id>')
 def get_label_filter_model(model_id):
