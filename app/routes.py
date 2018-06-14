@@ -232,13 +232,13 @@ def get_bbox(id):
 
 @app.route('/untagged/<user_id>')
 def get_untagged_images(user_id):
+    limit = request.args.get('limit')
     untagged = db.engine.execute(
-        "SELECT ID FROM (SELECT * FROM ( SELECT IMAGEID FROM IMAGE_USER_STATUS WHERE USERID = {})a RIGHT JOIN IMAGE ON IMAGE.ID = a.IMAGEID)b where IMAGEID IS NULL"\
-        .format(user_id)
-        )
-    result = ids_schema.dump(untagged)
-    return jsonify(result.data)
+        "SELECT id, url FROM (SELECT * FROM ( SELECT IMAGEID FROM IMAGE_USER_STATUS WHERE USERID = {})a RIGHT JOIN IMAGE ON IMAGE.ID = a.IMAGEID)b where IMAGEID IS NULL LIMIT %s"\
+        .format(user_id),int(limit))
 
+    result = images_schema.dump(untagged)
+    return jsonify(result.data)
 @app.route('/bbox/image/<image_id>')
 def get_bbox_filter_image(image_id):
     all_bbox = BoundingBox.query.filter_by(imageId = image_id, status = True)

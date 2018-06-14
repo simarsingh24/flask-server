@@ -1,5 +1,5 @@
 
-SQLALCHEMY_DATABASE_URI = 'mysql://mi0313@localhost/proto'
+SQLALCHEMY_DATABASE_URI = 'mysql://root@localhost/tagger'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
