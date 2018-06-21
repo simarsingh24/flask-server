@@ -8,20 +8,20 @@ class BoundingBox(db.Model):
     bottomRightX = db.Column(db.Float)
     bottomRightY = db.Column(db.Float)
     confidence = db.Column(db.Float)
-    mode = db.Column(db.Boolean)
-    status = db.Column(db.Boolean)
+    isTaggedByUser = db.Column(db.Boolean)
+    isActive = db.Column(db.Boolean)
     userId = db.Column(db.Integer,nullable=False)
     imageId=db.Column(db.Integer,db.ForeignKey('image.id'),nullable=False)
     labelId=db.Column(db.Integer,db.ForeignKey('label.id'),nullable=False)
   
-    def __init__(self, topLeftX,topLeftY,bottomRightX,bottomRightY,confidence,mode,status,userId,imageId,labelId):
+    def __init__(self, topLeftX,topLeftY,bottomRightX,bottomRightY,confidence,isTaggedByUser,isActive,userId,imageId,labelId):
         self.topLeftY = topLeftY
         self.topLeftX = topLeftX
         self.bottomRightY =bottomRightY
         self.bottomRightX = bottomRightX
         self.confidence = confidence
-        self.mode = mode
-        self.status = status
+        self.isTaggedByUser = isTaggedByUser
+        self.isActive = isActive
         self.userId = userId
         self.imageId = imageId
         self.labelId = labelId
@@ -32,11 +32,15 @@ class BoundingBox(db.Model):
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True,nullable=False)
     url = db.Column(db.String(2083),nullable = False)
+    height = db.Column(db.Integer,nullable = False)
+    width = db.Column(db.Integer,nullable = False)
     boundingbox = db.relationship('BoundingBox', backref='image', lazy=True)
     imageuserstatus = db.relationship('ImageUserStatus', backref='image', lazy=True)
 
-    def __init__(self, url):
+    def __init__(self, url , height,width):
         self.url = url
+        self.height = height
+        self.width = width
     
     def __repr__(self):
         return '<Image {}>'.format(self.id)  

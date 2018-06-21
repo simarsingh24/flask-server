@@ -33,7 +33,7 @@ class LabelSchema(ma.Schema):
 class ImageSchema(ma.Schema):
     class Meta:
         # Fields to expose
-        fields = ('id','url', '_links')
+        fields = ('id','url','height','width', '_links')
     _links = ma.Hyperlinks({
         'self': ma.URLFor('get_image', id='<id>'),
         'collection': ma.URLFor('image')
@@ -42,8 +42,17 @@ class ImageSchema(ma.Schema):
 class BoundingBoxSchema(ma.Schema):
     class Meta:
         # Fields to expose
-        fields = ('id','topLeftX','topLeftY','bottomRightX','bottomRightY','confidence','mode','status','userId',
+        fields = ('id','topLeftX','topLeftY','bottomRightX','bottomRightY','confidence','isTaggedByUser','isActive','userId',
             'imageId','labelId', '_links')
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('get_bbox', id='<id>'),
+        'collection': ma.URLFor('bbox')
+    })
+class BoundingBoxLabelTextSchema(ma.Schema):
+    class Meta:
+        # Fields to expose
+        fields = ('id','topLeftX','topLeftY','bottomRightX','bottomRightY','confidence','isTaggedByUser','isActive','userId',
+            'imageId','labelId', 'text', '_links')
     _links = ma.Hyperlinks({
         'self': ma.URLFor('get_bbox', id='<id>'),
         'collection': ma.URLFor('bbox')
@@ -64,6 +73,8 @@ models_schema = ModelSchema(many=True)
 image_user_status_schema = ImageUserStatusSchema()
 images_users_status_schema = ImageUserStatusSchema(many=True)
 
+bounding_box_labelText_schema = BoundingBoxLabelTextSchema()
+bounding_boxes_labelTexts_schema = BoundingBoxLabelTextSchema(many=True)
 
 label_schema = LabelSchema()
 labels_schema = LabelSchema(many=True)
