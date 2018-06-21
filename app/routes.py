@@ -276,29 +276,29 @@ def get_bbox_filter_image_mode(image_id, isTaggedByUser):
 @app.route('/tag/<image_id>/<user_id>', methods = ['POST'])
 def tag_image(image_id, user_id):
     tag_status = request.args.get('status')
-    # try:
-    image_user = db.engine.execute(
-        "SELECT * FROM IMAGE_USER_STATUS WHERE imageId = {}".format(imageId))
-  
-    # db.session.delete(image_user)
-    # except:
-    #     _ = 1
-    # new_image_user_status = ImageUserStatus(tag_status, image_id, user_id)
-    # db.session.add(new_image_user_status)
-    # if tag_status != 'skipped':
-    #     all_bbox = []
-    #     for bbox_request in request.json:
-    #         bbox_tlx = bbox_request["topleft"]["x"]
-    #         bbox_tly = bbox_request["topleft"]["y"]
-    #         bbox_brx = bbox_request["bottomright"]["x"]
-    #         bbox_bry = bbox_request["bottomright"]["y"]
-    #         confidence = bbox_request["confidence"]
-    #         isTaggedByUser = bbox_request["isTaggedByUser"]
-    #         isActive = bbox_request["isActive"]
-    #         label_id = bbox_request["labelId"]
-    #         db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
-    #             isActive,user_id,image_id,label_id))
-    #db.session.commit()
+    tagger = request.args.get('modelTag')
+    if int(tagger):
+        try:
+            image_user = ImageUserStatus(tag_status, image_id, user_id)
+            db.session.add(new_image_user_status)
+        except:
+            image_user = ImageUserStatus.query.filter_by(userId = user_id, imageId = image_id)
+            image_user.status = tag_status
+        db.session.commit()
+    if tag_status != 'skipped':
+        all_bbox = []
+        for bbox_request in request.json:
+            bbox_tlx = bbox_request["topleft"]["x"]
+            bbox_tly = bbox_request["topleft"]["y"]
+            bbox_brx = bbox_request["bottomright"]["x"]
+            bbox_bry = bbox_request["bottomright"]["y"]
+            confidence = bbox_request["confidence"]
+            isTaggedByUser = bbox_request["isTaggedByUser"]
+            isActive = bbox_request["isActive"]
+            label_id = bbox_request["labelId"]
+            db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
+                isActive,user_id,image_id,label_id))
+    db.session.commit()
     return jsonify(images_users_status_schema.dump(image_user).data)
 
 # @app.route('/model_tag/<image_id>', methods = ['POST'])

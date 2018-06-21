@@ -76,7 +76,7 @@ class ImageUserStatus(db.Model):
     status = db.Column(db.String(10),nullable=False)
     imageId=db.Column(db.Integer,db.ForeignKey('image.id'),nullable=False)
     userId = db.Column(db.Integer,nullable=False)
-    UniqueConstraint('imageId', 'userId', 'status', name='user_image_status')
+    UniqueConstraint('imageId', 'userId', name='user_image')
 
     def __init__(self, status,imageId,userId):
         self.status= status
