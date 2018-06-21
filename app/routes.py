@@ -276,14 +276,18 @@ def get_bbox_filter_image_mode(image_id, isTaggedByUser):
 @app.route('/tag/<image_id>/<user_id>', methods = ['POST'])
 def tag_image(image_id, user_id):
     tag_status = request.args.get('status')
-    tagger = request.args.get('modelTag')
+    tagger = request.args.get('userTag')
+    print(tagger)
     if int(tagger):
-        try:
+        image_users = ImageUserStatus.query.filter_by(userId = user_id, imageId = image_id)
+        if len(image_users.all()):
+            for image_user in image_users:
+                image_user_update = ImageUserStatus.query.get(image_user.id)
+                image_user_update.status = tag_status
+        else:
+            print('nope')
             image_user = ImageUserStatus(tag_status, image_id, user_id)
-            db.session.add(new_image_user_status)
-        except:
-            image_user = ImageUserStatus.query.filter_by(userId = user_id, imageId = image_id)
-            image_user.status = tag_status
+            db.session.add(image_user)
         db.session.commit()
     if tag_status != 'skipped':
         all_bbox = []
@@ -299,7 +303,7 @@ def tag_image(image_id, user_id):
             db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
                 isActive,user_id,image_id,label_id))
     db.session.commit()
-    return jsonify(images_users_status_schema.dump(image_user).data)
+    return 'tagged'
 
 # @app.route('/model_tag/<image_id>', methods = ['POST'])
 # def tag_image(image_id):
