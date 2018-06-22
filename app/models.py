@@ -86,4 +86,36 @@ class ImageUserStatus(db.Model):
     def __repr__(self):
         return '<ImageUserStatus {}>'.format(self.id)  
 
+class Article(db.Model):
+    id = db.Column(db.Integer, primary_key=True,nullable=False)
+    attributeType = db.Column(db.String(100))
+    attributeValue = db.Column(db.String(100))
+    isTaggedByUser = db.Column(db.Boolean)
+    isActive = db.Column(db.Boolean)
+    userId = db.Column(db.Integer,nullable=False)
+    imageId=db.Column(db.Integer,db.ForeignKey('image_annotation.id'),nullable=False)
+    
+    def __init__(self, attributeType,attributeValue,isTaggedByUser,isActive,userId,imageId):
+        self.attributeValue = attributeValue
+        self.attributeType = attributeType
+        self.isTaggedByUser = isTaggedByUser
+        self.isActive = isActive
+        self.userId = userId
+        self.imageId = imageId
+
+    def __repr__(self):
+        return '<Article {}>'.format(self.id)  
+
+class ImageAnnotation(db.Model):
+    id = db.Column(db.Integer, primary_key=True,nullable=False)
+    url = db.Column(db.String(2083),nullable = False)
+    article = db.relationship('Article', backref='imageAnnotation', lazy=True)
+
+    def __init__(self, url):
+        self.url = url
+    
+    def __repr__(self):
+        return '<Image {}>'.format(self.id)  
+
+
 db.create_all()

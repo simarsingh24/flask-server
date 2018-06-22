@@ -64,6 +64,23 @@ class IDSchema(ma.Schema):
         # Fields to expose
         fields = ['id']
 
+class ArticleSchema(ma.Schema):
+    class Meta:
+        # Fields to expose
+        fields = ('id','attributeType','attributeValue','isTaggedByUser','userId','imageId','isActive','_links')
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('get_article', id='<id>'),
+        'collection': ma.URLFor('article')
+    })
+
+class ImageAnnotationSchema(ma.Schema):
+    class Meta:
+        # Fields to expose
+        fields = ('id','url','_links')
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('get_annotation_image', id='<id>'),
+        'collection': ma.URLFor('annotation_image')
+    })
 
 
 
@@ -78,6 +95,12 @@ bounding_boxes_labelTexts_schema = BoundingBoxLabelTextSchema(many=True)
 
 label_schema = LabelSchema()
 labels_schema = LabelSchema(many=True)
+
+image_annotation_schema = ImageAnnotationSchema()
+images_annotations_schema = ImageAnnotationSchema(many=True)
+
+article_schema = ArticleSchema()
+articles_schema = ArticleSchema(many=True)
 
 image_schema = ImageSchema()
 images_schema = ImageSchema(many=True)

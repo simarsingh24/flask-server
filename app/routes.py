@@ -1,4 +1,4 @@
-from flask import request, redirect, url_for,jsonify
+from flask import request, redirect, url_for,jsonify, send_file
 from app import app, db
 from app.models import *
 from app.schemas import *
@@ -276,16 +276,14 @@ def get_bbox_filter_image_mode(image_id, isTaggedByUser):
 @app.route('/tag/<image_id>/<user_id>', methods = ['POST'])
 def tag_image(image_id, user_id):
     tag_status = request.args.get('status')
-    tagger = request.args.get('userTag')
-    print(tagger)
-    if int(tagger):
+    userTag = request.args.get('userTag')
+    if int(userTag):
         image_users = ImageUserStatus.query.filter_by(userId = user_id, imageId = image_id)
         if len(image_users.all()):
             for image_user in image_users:
                 image_user_update = ImageUserStatus.query.get(image_user.id)
                 image_user_update.status = tag_status
         else:
-            print('nope')
             image_user = ImageUserStatus(tag_status, image_id, user_id)
             db.session.add(image_user)
         db.session.commit()
@@ -305,22 +303,6 @@ def tag_image(image_id, user_id):
     db.session.commit()
     return 'tagged'
 
-# @app.route('/model_tag/<image_id>', methods = ['POST'])
-# def tag_image(image_id):
-#     all_bbox = []
-#     for bbox_request in request.json:
-#         bbox_tlx = bbox_request["topleft"]["x"]
-#         bbox_tly = bbox_request["topleft"]["y"]
-#         bbox_brx = bbox_request["bottomright"]["x"]
-#         bbox_bry = bbox_request["bottomright"]["y"]
-#         confidence = bbox_request["confidence"]
-#         isTaggedByUser = bbox_request["isTaggedByUser"]
-#         isActive = bbox_request["isActive"]
-#         label_id = bbox_request["labelId"]
-#         db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
-#             isActive,user_id,image_id,label_id))
-#     db.session.commit()
-#     return 'tagged'
 
 @app.route('/label/model/<model_id>')
 def get_label_filter_model(model_id):
@@ -328,14 +310,151 @@ def get_label_filter_model(model_id):
     result = labels_schema.dump(all_label)
     return(jsonify(result.data))
 
+#GetLocalImage
+@app.route('/useImage')
+def get_usable_image():
+    path = request.args.get('path')
+    rType = request.args.get('type')
+    if rType == 'global':
+       return path
+    else:
+        try:
+            return send_file(path, mimetype='image/gif')
+        except Exception as e:
+            return str(e)
 
 
+#CRUD AND ROUTES FOR ANNOTATION TOOL
+
+# Article
+
+#CREATE AND GET ALL
+@app.route('/article' , methods=['POST', 'GET'])
+def article():
+    if request.method == 'POST':
+        attributeType = request.json["attributeType"]
+        attributeValue = request.json["attributeValue"]
+        isTaggedByUser = request.json["isTaggedByUser"]
+        isActive = request.json["isActive"]
+        user_id = request.json["userId"]
+        image_id = request.json["imageId"]
+        new_article = Article(attributeType,attributeValue,isTaggedByUser,isActive,user_id,image_id)
+        db.session.add(new_article)
+        db.session.commit()
+        return article_schema.jsonify(new_article)  
+    if request.method == 'GET' :
+        all_article = Article.query.all()
+        result = articles_schema.dump(all_article)
+        return jsonify(result.data)
+
+#UPDATE
+@app.route('/article/<id>', methods = ['PUT'])
+def update_article(id):
+    article = Article.query.get(id)
+    attributeType = request.json["attributeType"]
+    attributeValue = request.json["attributeValue"]
+    isTaggedByUser = request.json["isTaggedByUser"]
+    isActive = request.json["isActive"]
+    user_id = request.json["userId"]
+    image_id = request.json["imageId"]
+    db.session.commit()
+    return article_schema.jsonify(article)
+
+#DELETE
+@app.route('/article/<id>', methods = ['DELETE'])
+def delete_article(id):
+    article = Article.query.get(id)
+    db.session.delete(article)
+    db.session.commit()
+    return article_schema.jsonify(bbox)
+
+#GET BY ID
+@app.route('/article/<id>')
+def get_article(id):
+    article = Article.query.get(id)
+    return article_schema.jsonify(article)
+
+# ImageAnnoation
+
+#CREATE AND GET ALL
+@app.route('/annotation_image' , methods=['POST', 'GET'])
+def annotation_image():
+    if request.method == 'POST':
+        url = request.json["url"]
+        new_image = ImageAnnoation(url)
+        db.session.add(new_image)
+        db.session.commit()
+        return image_schema.jsonify(new_image)  
+    if request.method == 'GET' :
+        all_image = ImageAnnotation.query.all()
+        result = images_annotations_schema.dump(all_image)
+        return jsonify(result.data)
+
+#UPDATE
+@app.route('/annotation_image/<id>', methods = ['PUT'])
+def update_annotation_image(id):
+    image = ImageAnnoation.query.get(id)
+    image.url = request.json["url"]
+    db.session.commit()
+    return image_annotation_schema.jsonify(image)
+
+#DELETE
+@app.route('/annotation_image/<id>', methods = ['DELETE'])
+def delete_annotation_image(id):
+    image = ImageAnnoation.query.get(id)
+    db.session.delete(image)
+    db.session.commit()
+    return image_annotation_schema.jsonify(image)
+
+#GET BY ID
+@app.route('/annotation_image/<id>')
+def get_annotation_image(id):
+    image = ImageAnnotation.query.get(id)
+    return image_annotation_schema.jsonify(image)
+
+#ROUTES FOR ARTICLE
+#GET UNTAGGED IMAGES GIVEN USERID
+@app.route('/untaggedAnnotation/<user_id>')
+def get_untagged_images_annotation(user_id):
+    limit = request.args.get('limit')
+    untagged = db.engine.execute(
+        "SELECT id, url FROM (SELECT * FROM ( SELECT IMAGEID FROM IMAGE_USER_STATUS_ANNOTAION WHERE USERID = {})a RIGHT JOIN IMAGE_ANNOTATION ON IMAGE.ID = a.IMAGEID)b where IMAGEID IS NULL LIMIT %s"\
+        .format(user_id),int(limit))
+    result = images_annotations_schema.dump(untagged)
+    return jsonify(result.data)
 
 
+#TAG an image given userid and imageid
 
-
-
-
+@app.route('/tagAnnotation/<image_id>/<user_id>', methods = ['POST'])
+def tag_image_annotation(image_id, user_id):
+    tag_status = request.args.get('status')
+    userTag = request.args.get('userTag')
+    if int(userTag):
+        image_users = ImageUserStatus.query.filter_by(userId = user_id, imageId = image_id)
+        if len(image_users.all()):
+            for image_user in image_users:
+                image_user_update = ImageUserStatus.query.get(image_user.id)
+                image_user_update.status = tag_status
+        else:
+            image_user = ImageUserStatus(tag_status, image_id, user_id)
+            db.session.add(image_user)
+        db.session.commit()
+    if tag_status != 'skipped':
+        all_bbox = []
+        for bbox_request in request.json:
+            bbox_tlx = bbox_request["topleft"]["x"]
+            bbox_tly = bbox_request["topleft"]["y"]
+            bbox_brx = bbox_request["bottomright"]["x"]
+            bbox_bry = bbox_request["bottomright"]["y"]
+            confidence = bbox_request["confidence"]
+            isTaggedByUser = bbox_request["isTaggedByUser"]
+            isActive = bbox_request["isActive"]
+            label_id = bbox_request["labelId"]
+            db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
+                isActive,user_id,image_id,label_id))
+    db.session.commit()
+    return 'tagged'
 
 
 
