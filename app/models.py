@@ -49,7 +49,6 @@ class Label(db.Model):
     id = db.Column(db.Integer, primary_key=True,nullable=False)
     text = db.Column(db.String(80))
     modelId = db.Column(db.Integer,db.ForeignKey('model.id'),nullable=False)
-    
     boundingbox = db.relationship('BoundingBox', backref='label', lazy=True)
 
     def __init__(self, text,modelId):
@@ -85,37 +84,39 @@ class ImageUserStatus(db.Model):
 
     def __repr__(self):
         return '<ImageUserStatus {}>'.format(self.id)  
-
+################################################################################################################### Image Annotation Tool
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True,nullable=False)
     attributeType = db.Column(db.String(100))
     attributeValue = db.Column(db.String(100))
-    isTaggedByUser = db.Column(db.Boolean)
-    isActive = db.Column(db.Boolean)
-    userId = db.Column(db.Integer,nullable=False)
-    imageId=db.Column(db.Integer,db.ForeignKey('image_annotation.id'),nullable=False)
+    articleType = db.Column(db.String(100))
+    imageUrl = db.Column(db.String(2083),nullable = False)
+    UniqueConstraint('imageUrl', 'articleType','attributeType', 'attributeValue', name='article_constraint')
+    userArticle = db.relationship('UserArticle', backref='article', lazy=True)
+
     
-    def __init__(self, attributeType,attributeValue,isTaggedByUser,isActive,userId,imageId):
+    def __init__(self, attributeType,attributeValue,articleType,imageUrl):
         self.attributeValue = attributeValue
         self.attributeType = attributeType
-        self.isTaggedByUser = isTaggedByUser
-        self.isActive = isActive
-        self.userId = userId
-        self.imageId = imageId
+        self.articleType = articleType
+        self.imageUrl = imageUrl
 
     def __repr__(self):
         return '<Article {}>'.format(self.id)  
 
-class ImageAnnotation(db.Model):
+class UserArticle(db.Model):
     id = db.Column(db.Integer, primary_key=True,nullable=False)
-    url = db.Column(db.String(2083),nullable = False)
-    article = db.relationship('Article', backref='imageAnnotation', lazy=True)
-
-    def __init__(self, url):
-        self.url = url
+    userId = db.Column(db.Integer,nullable=False)
+    response = db.Column(db.String(100))
+    articleId=db.Column(db.Integer,db.ForeignKey('article.id'),nullable=False)
+    
+    def __init__(self, userId,response,articleId):
+        self.userId = userId
+        self.response = response
+        self.articleId = articleId
     
     def __repr__(self):
-        return '<Image {}>'.format(self.id)  
+        return '<UserArticle {}>'.format(self.id)  
 
 
 db.create_all()

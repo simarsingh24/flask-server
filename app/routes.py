@@ -324,7 +324,7 @@ def get_usable_image():
             return str(e)
 
 
-#CRUD AND ROUTES FOR ANNOTATION TOOL
+################################################################################CRUD AND ROUTES FOR ANNOTATION TOOL
 
 # Article
 
@@ -332,13 +332,13 @@ def get_usable_image():
 @app.route('/article' , methods=['POST', 'GET'])
 def article():
     if request.method == 'POST':
+        
         attributeType = request.json["attributeType"]
         attributeValue = request.json["attributeValue"]
-        isTaggedByUser = request.json["isTaggedByUser"]
-        isActive = request.json["isActive"]
-        user_id = request.json["userId"]
-        image_id = request.json["imageId"]
-        new_article = Article(attributeType,attributeValue,isTaggedByUser,isActive,user_id,image_id)
+        articleType = request.json["articleType"]
+        imageUrl = request.json["imageUrl"]
+        
+        new_article = Article(attributeType,attributeValue,articleType,imageUrl)
         db.session.add(new_article)
         db.session.commit()
         return article_schema.jsonify(new_article)  
@@ -353,10 +353,9 @@ def update_article(id):
     article = Article.query.get(id)
     attributeType = request.json["attributeType"]
     attributeValue = request.json["attributeValue"]
-    isTaggedByUser = request.json["isTaggedByUser"]
-    isActive = request.json["isActive"]
-    user_id = request.json["userId"]
-    image_id = request.json["imageId"]
+    articleType = request.json["articleType"]
+    imageUrl = request.json["imageUrl"]
+
     db.session.commit()
     return article_schema.jsonify(article)
 
@@ -366,7 +365,7 @@ def delete_article(id):
     article = Article.query.get(id)
     db.session.delete(article)
     db.session.commit()
-    return article_schema.jsonify(bbox)
+    return article_schema.jsonify(article)
 
 #GET BY ID
 @app.route('/article/<id>')
@@ -374,90 +373,49 @@ def get_article(id):
     article = Article.query.get(id)
     return article_schema.jsonify(article)
 
-# ImageAnnoation
+# UserArticle
 
 #CREATE AND GET ALL
-@app.route('/annotation_image' , methods=['POST', 'GET'])
-def annotation_image():
+@app.route('/article_user' , methods=['POST', 'GET'])
+def article_user():
     if request.method == 'POST':
-        url = request.json["url"]
-        new_image = ImageAnnoation(url)
-        db.session.add(new_image)
+        userId = request.json["userId"]
+        response = request.json["response"]
+        articleId = request.json["articleId"]
+
+        new_user = UserArticle(url)
+        db.session.add(new_user)
         db.session.commit()
-        return image_schema.jsonify(new_image)  
+        return user_article_schema.jsonify(new_user)  
     if request.method == 'GET' :
-        all_image = ImageAnnotation.query.all()
-        result = images_annotations_schema.dump(all_image)
+        all_users = UserArticle.query.all()
+        result = user_articles_schema.dump(all_users)
         return jsonify(result.data)
 
 #UPDATE
-@app.route('/annotation_image/<id>', methods = ['PUT'])
-def update_annotation_image(id):
-    image = ImageAnnoation.query.get(id)
-    image.url = request.json["url"]
+@app.route('/article_user/<id>', methods = ['PUT'])
+def update_article_user(id):
+    user = UserArticle.query.get(id)
+    user.userId = request.json["userId"]
+    user.response = request.json["response"]
+    user.articleId = request.json["articleId"]
+
     db.session.commit()
-    return image_annotation_schema.jsonify(image)
+    return user_article_schema.jsonify(user)
 
 #DELETE
-@app.route('/annotation_image/<id>', methods = ['DELETE'])
-def delete_annotation_image(id):
-    image = ImageAnnoation.query.get(id)
+@app.route('/article_user/<id>', methods = ['DELETE'])
+def delete_article_user(id):
+    user = UserArticle.query.get(id)
     db.session.delete(image)
     db.session.commit()
-    return image_annotation_schema.jsonify(image)
+    return user_article_schema.jsonify(user)
 
 #GET BY ID
-@app.route('/annotation_image/<id>')
-def get_annotation_image(id):
-    image = ImageAnnotation.query.get(id)
-    return image_annotation_schema.jsonify(image)
-
-#ROUTES FOR ARTICLE
-#GET UNTAGGED IMAGES GIVEN USERID
-@app.route('/untaggedAnnotation/<user_id>')
-def get_untagged_images_annotation(user_id):
-    limit = request.args.get('limit')
-    untagged = db.engine.execute(
-        "SELECT id, url FROM (SELECT * FROM ( SELECT IMAGEID FROM IMAGE_USER_STATUS_ANNOTAION WHERE USERID = {})a RIGHT JOIN IMAGE_ANNOTATION ON IMAGE.ID = a.IMAGEID)b where IMAGEID IS NULL LIMIT %s"\
-        .format(user_id),int(limit))
-    result = images_annotations_schema.dump(untagged)
-    return jsonify(result.data)
-
-
-#TAG an image given userid and imageid
-
-@app.route('/tagAnnotation/<image_id>/<user_id>', methods = ['POST'])
-def tag_image_annotation(image_id, user_id):
-    tag_status = request.args.get('status')
-    userTag = request.args.get('userTag')
-    if int(userTag):
-        image_users = ImageUserStatus.query.filter_by(userId = user_id, imageId = image_id)
-        if len(image_users.all()):
-            for image_user in image_users:
-                image_user_update = ImageUserStatus.query.get(image_user.id)
-                image_user_update.status = tag_status
-        else:
-            image_user = ImageUserStatus(tag_status, image_id, user_id)
-            db.session.add(image_user)
-        db.session.commit()
-    if tag_status != 'skipped':
-        all_bbox = []
-        for bbox_request in request.json:
-            bbox_tlx = bbox_request["topleft"]["x"]
-            bbox_tly = bbox_request["topleft"]["y"]
-            bbox_brx = bbox_request["bottomright"]["x"]
-            bbox_bry = bbox_request["bottomright"]["y"]
-            confidence = bbox_request["confidence"]
-            isTaggedByUser = bbox_request["isTaggedByUser"]
-            isActive = bbox_request["isActive"]
-            label_id = bbox_request["labelId"]
-            db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
-                isActive,user_id,image_id,label_id))
-    db.session.commit()
-    return 'tagged'
-
-
-
+@app.route('/article_user/<id>')
+def get_article_user(id):
+    user = UserArticle.query.get(id)
+    return user_article_schema.jsonify(user)
 
 
 

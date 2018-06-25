@@ -65,21 +65,23 @@ class IDSchema(ma.Schema):
         fields = ['id']
 
 class ArticleSchema(ma.Schema):
+    
     class Meta:
         # Fields to expose
-        fields = ('id','attributeType','attributeValue','isTaggedByUser','userId','imageId','isActive','_links')
+        fields = ('id','attributeType','attributeValue','articleType','imageUrl','_links')
     _links = ma.Hyperlinks({
         'self': ma.URLFor('get_article', id='<id>'),
         'collection': ma.URLFor('article')
     })
 
-class ImageAnnotationSchema(ma.Schema):
+class UserArticleSchema(ma.Schema):
+
     class Meta:
         # Fields to expose
-        fields = ('id','url','_links')
+        fields = ('id','userId','response','articleId','_links')
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('get_annotation_image', id='<id>'),
-        'collection': ma.URLFor('annotation_image')
+        'self': ma.URLFor('get_article_user', id='<id>'),
+        'collection': ma.URLFor('article_user')
     })
 
 
@@ -96,8 +98,8 @@ bounding_boxes_labelTexts_schema = BoundingBoxLabelTextSchema(many=True)
 label_schema = LabelSchema()
 labels_schema = LabelSchema(many=True)
 
-image_annotation_schema = ImageAnnotationSchema()
-images_annotations_schema = ImageAnnotationSchema(many=True)
+user_article_schema = UserArticleSchema()
+user_articles_schema = UserArticleSchema(many=True)
 
 article_schema = ArticleSchema()
 articles_schema = ArticleSchema(many=True)
