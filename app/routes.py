@@ -3,6 +3,7 @@ from app import app, db
 from app.models import *
 from app.schemas import *
 import requests
+import json
 
 @app.route('/')
 def home():
@@ -175,6 +176,15 @@ def get_label(id):
     label = Label.query.get(id)
     return label_schema.jsonify(label)
 
+#GET ID from text
+@app.route('/label_text/<label>')
+def get_label_id(label):
+    result = db.engine.execute(
+        "SELECT id FROM Label where text = %s",label)
+    output = []
+    for row in result:
+        output = (row['id'])
+    return str(output)
 
 # Bounding Box
 
@@ -297,11 +307,14 @@ def tag_image(image_id, user_id):
             confidence = bbox_request["confidence"]
             isTaggedByUser = bbox_request["isTaggedByUser"]
             isActive = bbox_request["isActive"]
-            label_id = bbox_request["labelId"]
+            if(len(get_label_id(bbox_request["label"]))):
+                label_id = int(get_label_id(bbox_request["label"]))
+            else:
+                label_id = -1
             db.session.add(BoundingBox(bbox_tlx,bbox_tly,bbox_brx,bbox_bry,confidence,isTaggedByUser,
                 isActive,user_id,image_id,label_id))
     db.session.commit()
-    return 'tagged'
+    return tag_status
 
 
 @app.route('/label/model/<model_id>')
@@ -383,7 +396,7 @@ def article_user():
         response = request.json["response"]
         articleId = request.json["articleId"]
 
-        new_user = UserArticle(url)
+        new_user = UserArticle(userId,response,articleId)
         db.session.add(new_user)
         db.session.commit()
         return user_article_schema.jsonify(new_user)  
@@ -417,6 +430,43 @@ def get_article_user(id):
     user = UserArticle.query.get(id)
     return user_article_schema.jsonify(user)
 
+## Routes for annotation tool
+
+# GET unseen articles for given userid 
+@app.route('/untagged_annotation/<user_id>')
+def get_untagged_images_annotation(user_id):
+    limit = request.args.get('limit')
+    untagged = db.engine.execute(
+        "SELECT id, attributeType, attributeValue, articleType, imageUrl FROM (SELECT * FROM ( SELECT articleId FROM user_article WHERE userId = {})a RIGHT JOIN Article ON article.id = a.articleId)b where articleId IS NULL LIMIT %s"\
+        .format(user_id),int(limit))
+    result = articles_schema.dump(untagged)
+    return jsonify(result.data)
+
+# tag an article given userId
+@app.route('/skipped_annotation/<user_id>')
+def get_skipped_images_annotation(user_id):
+    limit = request.args.get('limit')
+    untagged = db.engine.execute(
+        "SELECT id, attributeType, attributeValue, articleType, imageUrl FROM (SELECT * FROM ( SELECT articleId FROM user_article WHERE userId = {} AND response=\"skipped\")a JOIN Article ON article.id = a.articleId)b LIMIT %s"\
+        .format(user_id),int(limit))
+    result = articles_schema.dump(untagged)
+    return jsonify(result.data)
+
+
+# Tag an article given articleId and userid,Accepts Status as a query par
+@app.route('/tag_annotation/<article_id>/<user_id>', methods = ['POST'])
+def tag_article(article_id, user_id):
+    response = request.args.get('status')
+    article_users = UserArticle.query.filter_by(userId = user_id, articleId = article_id)
+    if len(article_users.all()):
+        for article_user in article_users:
+            article_user_update = UserArticle.query.get(article_user.id)
+            article_user_update.response = response
+    else:
+        article_user = UserArticle(user_id,response,article_id)
+        db.session.add(article_user)
+    db.session.commit()
+    return response
 
 
 
