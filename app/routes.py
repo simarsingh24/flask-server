@@ -452,6 +452,34 @@ def get_skipped_images_annotation(user_id):
     result = articles_schema.dump(untagged)
     return jsonify(result.data)
 
+#get different article types
+@app.route('/article_type')
+def get_disctinct_article_types():
+    articleType = db.engine.execute("SELECT DISTINCT articleType FROM Article")
+    output = []
+    for row in articleType:
+        output.append(row['articleType'])
+    return jsonify(output)
+#get different attribute types for given article type
+@app.route('/attribute_type')
+def get_attribute_type():
+    articleType = request.args.get('articleType')
+    attributeType = db.engine.execute("SELECT DISTINCT attributeType FROM Article WHERE articleType = %s",articleType)
+    output = []
+    for row in attributeType:
+        output.append(row['attributeType'])
+    return jsonify(output)
+   
+# GET unseen articles for given userid and attribute_type and article type
+@app.route('/untagged_annotation/<article_type>/<user_id>')
+def get_untagged_images_under_article_type(article_type,user_id):
+    limit = request.args.get('limit')
+    attributeType = request.args.get('attributeType')
+    untagged = db.engine.execute(
+        "SELECT id, attributeType, attributeValue, articleType, imageUrl FROM (SELECT * FROM ( SELECT articleId FROM user_article WHERE userId = {})a RIGHT JOIN (SELECT * FROM Article WHERE articleType = \"{}\" and  attributeType =\"{}\")b ON b.id = a.articleId)c where articleId IS NULL LIMIT %s"\
+        .format(user_id,article_type,attributeType),int(limit))
+    result = articles_schema.dump(untagged)
+    return jsonify(result.data)
 
 # Tag an article given articleId and userid,Accepts Status as a query par
 @app.route('/tag_annotation/<article_id>/<user_id>', methods = ['POST'])
