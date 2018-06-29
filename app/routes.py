@@ -469,6 +469,16 @@ def get_attribute_type():
     for row in attributeType:
         output.append(row['attributeType'])
     return jsonify(output)
+
+#get different attribute values for give attribute type
+@app.route('/attribute_values')
+def get_distinct_attribute_values():
+    attributeType = request.args.get('attributeType')
+    attributeValues = db.engine.execute("SELECT DISTINCT attributeValue FROM Article where attributeType = %s",(attributeType))
+    output = []
+    for row in attributeValues:
+        output.append(row['attributeValue'])
+    return jsonify(output)
    
 # GET unseen articles for given userid and attribute_type and article type
 @app.route('/untagged_annotation/<article_type>/<user_id>')
@@ -480,6 +490,17 @@ def get_untagged_images_under_article_type(article_type,user_id):
         .format(user_id,article_type,attributeType),int(limit))
     result = articles_schema.dump(untagged)
     return jsonify(result.data)
+
+#UPDATE attribute value of an article given its id and attribute type
+@app.route('/update_article_attribute_value/<id>', methods = ['PUT'])
+def update_attribute_value(id):
+    attributeType = request.args.get('attributeType')
+    attributeValue = request.args.get('attributeValue')
+
+    article = Article.query.get(id)
+    attributeValue = request.json["attributeValue"]
+    db.session.commit()
+    return article_schema.jsonify(article)
 
 # Tag an article given articleId and userid,Accepts Status as a query par
 @app.route('/tag_annotation/<article_id>/<user_id>', methods = ['POST'])
